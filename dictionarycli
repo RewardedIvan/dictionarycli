@@ -1,0 +1,24 @@
+#!/bin/bash
+if [[ $1 == "" ]]; then
+	exit 1
+fi
+numberOfDefs=$2
+if [[ $numberOfDefs == "" ]]; then
+	numberOfDefs="3"
+fi
+lookup=$(curl -s https://api.dictionaryapi.dev/api/v2/entries/en/$1)
+if [[ $lookup == "{\"title\":\"No Definitions Found\",\"message\":\"Sorry pal, we couldn't find definitions for the word you were looking for.\",\"resolution\":\"You can try the search again at later time or head to the web instead.\"}" ]]; then
+	echo "That word doesn't exist!"
+	exit 1
+fi
+
+partOfSpeech=$(echo $lookup | jq '.[0]["meanings"][0]["partOfSpeech"]')
+phonetic=$(echo $lookup | jq '.[0]["phonetic"]')
+phonetic=${phonetic:2:-2}
+definitions=$(echo $lookup | jq ".[0][\"meanings\"][0][\"definitions\"][:$numberOfDefs]")
+audio=$(echo $lookup | jq '.[0]["phonetics"][0]["audio"]')
+wikilink=$(echo $lookup | jq '.[0]["sourceUrls"][0]')
+synonyms=$(echo $lookup | jq --indent 0 '.[0]["meanings"][0]["synonyms"]')
+antonyms=$(echo $lookup | jq --indent 0 '.[0]["meanings"][0]["antonyms"]')
+
+printf "$partOfSpeech ($phonetic)\n$definitions\nsynonyms: $synonyms\nantonyms: $antonyms\nsound: $audio\nwiki: $wikilink"
